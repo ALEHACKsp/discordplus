@@ -91,10 +91,16 @@ private:
 
     void start_read(const boost::system::error_code& error, std::size_t count)
   {
-    handleDispatch("MESSAGE_CREATE", make_string(input_buffer_));
+    std::string message;
+    std::getline(std::istream(&input_buffer_), message);
+
+    handleDispatch("MESSAGE_CREATE", message);
     // Start an asynchronous operation to read a newline-delimited message.
 
-         start();
+        boost::asio::async_read_until(socket_, input_buffer_, "\r\n",
+        boost::bind(&tcp_connection::start_read, shared_from_this(),boost::asio::placeholders::error, 
+                boost::asio::placeholders::bytes_transferred)); 
+
   }
 
 void handle_read(const boost::system::error_code& error)

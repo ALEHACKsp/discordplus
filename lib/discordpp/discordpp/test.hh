@@ -20,36 +20,46 @@ public:
 
     connection(boost::asio::io_service& io_service, 
         const std::string& addr, const std::string& port) 
-        : m_addr(addr), m_port(port), m_socket(io_service)
+        : m_addr(addr), m_port(port), m_socket(io_service), m_resolver(io_service)
     {
         set_read_handler([this](const std::string& m) {this->read_handler(m);});
         set_write_handler([this](const std::string& m) {this->write_handler(m);});
-        connect();  
+        m_resolver.async_resolve(
+        boost::asio::ip::tcp::resolver::query(m_addr, m_port),
+        boost::bind(&connection::handle_resolve, this, _1, _2));  
     }
     
-void connect() 
+    void handle_resolve(const boost::system::error_code& err,
+                         tcp::resolver::iterator endpoint_iterator)
+    {
+    if (!err) {
+        boost::asio::ip::tcp::endpoint endpoint = *endpoint_iterator;
+        m_socket.async_connect(
+            endpoint,
+            boost::bind(&connection::handle_connect, this, _1, ++endpoint_iterator));
+    } else {
+        std::cerr << "Error: " << err.message() << std::endl;
+    }
+    }
+
+void handle_connect(const boost::system::error_code& err,
+                         tcp::resolver::iterator endpoint_iterator)
 {
+    if (!err) {
+        boost::asio::async_read_until(m_socket, m_buffer, "\r\n",
+        boost::bind(&connection::read, this,boost::asio::placeholders::error, 
+                boost::asio::placeholders::bytes_transferred)); 
+    } else if (endpoint_iterator != tcp::resolver::iterator()) {
+        m_socket.close();
+        tcp::endpoint endpoint = *endpoint_iterator;
+        m_socket.async_connect(
+            endpoint,
+            boost::bind(&connection::handle_connect, this, _1, ++endpoint_iterator));
+    } else {
+        std::cerr << "Error: " << err.message() << std::endl;
+    }
+}    
 
-    boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::address::from_string(m_addr), std::stoi(m_port));
-    
-
-        
-        //LOG("Info", "Trying to connect: " + m_addr + ":" + m_port);
-        
-        m_socket.connect(endpoint);
-
-        m_socket.async_read_some(boost::asio::buffer(m_buffer), 
-            boost::bind(&connection::read, this,
-                boost::asio::placeholders::error, 
-                boost::asio::placeholders::bytes_transferred
-            )
-        );
-        
-
-    
-    
-    //LOG("Info", "Connected!");
-}
 
     void close()
     {
@@ -70,14 +80,20 @@ void read(const boost::system::error_code& error, std::size_t count)
         close();
     }
     else {
-        m_read_handler(std::string(m_buffer.data(), count));
-        
-        m_socket.async_read_some(boost::asio::buffer(m_buffer), 
+        std::string message;
+        std::getline(std::istream(&m_buffer), message);
+        m_read_handler(message);
+        /*
+        m_socket.async_read_some(m_buffer, 
             boost::bind(&connection::read, this,
                 boost::asio::placeholders::error, 
                 boost::asio::placeholders::bytes_transferred
             )
-        ); /*
+        ); */
+        boost::asio::async_read_until(m_socket, m_buffer, "\r\n",
+        boost::bind(&connection::read, this,boost::asio::placeholders::error, 
+                boost::asio::placeholders::bytes_transferred)); 
+        /*
         boost::asio::async_read(m_socket, boost::asio::buffer(m_buffer), boost::asio::transfer_at_least(1),
         boost::bind(&connection::read, this,
                     boost::asio::placeholders::error, 
@@ -120,8 +136,9 @@ private:
     std::string m_port;
     
     boost::asio::ip::tcp::socket m_socket;
+    boost::asio::ip::tcp::resolver m_resolver;
     
-    std::array<char, 256> m_buffer;
+    boost::asio::streambuf m_buffer;
 
     read_handler_type m_read_handler;
     write_handler_type m_write_handler;

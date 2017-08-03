@@ -149,7 +149,26 @@ int main() {
         });
     });
 
+		tcpclient.add_read_handler([&tcpclient, &bot](const std::string& msg) {
+			/*std::istringstream iss(msg);
+			std::string from, type, to, msg;
+			
+			iss >> from >> type >> to >> msg; */
 
+			std::string content = msg+"\n";
+            json guild;
+            for(json& guildptr : bot.guilds_){
+                    if(guildptr["name"] == "testeserver"){
+                        guild = guildptr;
+                        break;
+                    }
+            }
+            bot.call(
+                        "/channels/" + guild["id"].get<std::string>() + "/messages",
+                        {{"content", content}},
+                        "POST"
+            );
+		});
 
 
     //out.send("hello"); 
