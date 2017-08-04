@@ -46,8 +46,8 @@ void handle_connect(const boost::system::error_code& err,
                          tcp::resolver::iterator endpoint_iterator)
 {
     if (!err) {
-        boost::asio::async_read_until(m_socket, m_buffer, "\r\n",
-        boost::bind(&connection::read, this,boost::asio::placeholders::error, 
+        boost::asio::async_read_until(m_socket, m_buffer, "\r\n", 
+        boost::bind(&connection::sign_in, this,boost::asio::placeholders::error, 
                 boost::asio::placeholders::bytes_transferred)); 
     } else if (endpoint_iterator != tcp::resolver::iterator()) {
         m_socket.close();
@@ -58,7 +58,39 @@ void handle_connect(const boost::system::error_code& err,
     } else {
         std::cerr << "Error: " << err.message() << std::endl;
     }
-}    
+}  
+
+void sign_in(const boost::system::error_code& err, std::size_t count)
+{
+    if (!err) {
+        std::string message;
+        std::getline(std::istream(&m_buffer), message);
+
+        if(message.find("Username: ") != -1)
+        {
+            this->write("alural");
+            boost::asio::async_read_until(m_socket, m_buffer, "Password: ",
+            boost::bind(&connection::sign_in, this,boost::asio::placeholders::error, 
+                boost::asio::placeholders::bytes_transferred)); 
+        }
+        else if(message.find("Password: ") != -1)
+        {
+            this->write("bebabeg123");
+            boost::asio::async_read_until(m_socket, m_buffer, "\r\n",
+            boost::bind(&connection::read, this,boost::asio::placeholders::error, 
+                boost::asio::placeholders::bytes_transferred)); 
+        }
+        else
+        {
+
+            boost::asio::async_read_until(m_socket, m_buffer, "Username: ",
+            boost::bind(&connection::sign_in, this,boost::asio::placeholders::error, 
+                boost::asio::placeholders::bytes_transferred)); 
+        }
+    } else {
+        std::cerr << "Error: " << err.message() << std::endl;
+    }
+}  
 
 
     void close()
@@ -80,9 +112,11 @@ void read(const boost::system::error_code& error, std::size_t count)
         close();
     }
     else {
+        std::string s( (std::istreambuf_iterator<char>(&m_buffer)), std::istreambuf_iterator<char>() );
         std::string message;
-        std::getline(std::istream(&m_buffer), message);
-        m_read_handler(message);
+        //std::getline(std::istream(&m_buffer), message);
+              //  std::cout << message+"\n";
+        m_read_handler(s);
         /*
         m_socket.async_read_some(m_buffer, 
             boost::bind(&connection::read, this,
