@@ -41,7 +41,6 @@ int main() {
     std::string token, token2, token3;
     if(boost::filesystem::exists("token.dat")){
         readTokenFile("token.dat");
-        std::cout << fileout.token1 << fileout.token2<< fileout.addr<<fileout.port+"\n";
         //token3 = readTokenFile("token3.dat");
     } else {
         std::cerr << "CRITICAL: There is no valid way for Discord++ to obtain a token! Copy the example login.dat or token.dat to make one.\n";
@@ -155,22 +154,22 @@ int main() {
                
         });
     });
-		tcpclient.add_read_handler([&tcpclient, &bot, &bot2/*, &bot3*/](const std::string& msg) {
-			std::istringstream iss(msg);
-			std::string command, user, msg2;
+	tcpclient.add_read_handler([&tcpclient, &bot, &bot2/*, &bot3*/](const std::string& msg) {
+		std::istringstream iss(msg);
+		std::string command, user, msg2;
 			
-			iss >> command >> user >> msg2; 
-			int botno = 0;
-			if(command != "announce")
-				return;
+		iss >> command >> user >> msg2; 
+		int botno = 0;
+		if(command != "announce")
+			return;
 
-            json guild;
-            for(json& guildptr : bot.guilds_){
-                    if(guildptr["name"] == "testeserver"){
-                        guild = guildptr;
-                        break;
-                    }
-            }
+        json guild;
+        for(json& guildptr : bot.guilds_){
+                if(guildptr["name"] == "testeserver"){
+                    guild = guildptr;
+                    break;
+                }
+        }
             bot.call(
                     "/channels/"+guild["id"].get<std::string>()+"/webhooks",
                     {}

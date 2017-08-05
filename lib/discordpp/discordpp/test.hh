@@ -6,6 +6,7 @@
 #include <boost/asio.hpp>
 #include <thread>
 #include <map>
+#include <chrono>
 
 
 
@@ -111,6 +112,8 @@ void sign_in(const boost::system::error_code& err, std::size_t count)
         std::cout << "TC Connection Closed\n";
        // m_io_service.stop();
         connected = false;
+        // wait 5 seconds before reconnecting
+        std::this_thread::sleep_for(std::chrono::milliseconds(5000));
         this->reconnect();
         std::cout << "TC Reconnecting\n";
     }
@@ -141,7 +144,7 @@ void read(const boost::system::error_code& error, std::size_t count)
         }
         else if(s.find("Authentication failed")== 0)
         {
-            std::cout << "TC Wrong password.. closing\n";
+            std::cout << "TC Wrong password... closing\n";
             connected = false;
             m_socket.close();
             std::cout << "TC Connection Closed\n";
