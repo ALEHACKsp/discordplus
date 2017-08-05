@@ -115,7 +115,7 @@ namespace discordpp{
                 std::cerr << "Discord Lost" << '\n';
                 close();
             }else {
-                std::cout << "Sending Heartbeat " << sequence_number_ << ":\n";
+                std::cout << "Sending Heartbeat " << sequence_number_ << ":\n"; 
                 sendkeepalive({{"op", 1},
                                {"d",  sequence_number_}});
                 acknowledged = false;
