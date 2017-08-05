@@ -79,6 +79,7 @@ void sign_in(const boost::system::error_code& err, std::size_t count)
             boost::asio::async_read_until(m_socket, m_buffer, "\r\n",
             boost::bind(&connection::read, this,boost::asio::placeholders::error, 
                 boost::asio::placeholders::bytes_transferred)); 
+            std::cout << "Signed in\n";
         }
         else
         {

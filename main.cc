@@ -18,8 +18,14 @@ namespace asio = boost::asio;
 //#include <lib/nlohmannjson/src/json.hpp>
 //#include <nlohmann/json.hpp>
 
-std::string readTokenFile(std::string tokenFilePath);
+void readTokenFile(std::string tokenFilePath);
 
+struct tokeninfo{
+	std::string addr;
+	std::string port;
+	std::string token1;
+	std::string token2;
+} fileout;
 using json = nlohmann::json;
 using aios_ptr = std::shared_ptr<asio::io_service>;
 
@@ -28,15 +34,13 @@ int main() {
 
     /*/
      * Read token from token file.
-     * Tokens are required to communicate with Discord, and hardcoding tokens is a bad idea.
-     * If your bot is open source, make sure it's ignore by git in your .gitignore file.
     /*/
 
     std::string token, token2, token3;
-    if(boost::filesystem::exists("token.dat") && boost::filesystem::exists("token2.dat")){
-        token = readTokenFile("token.dat");
-        token2 = readTokenFile("token2.dat");
-        token3 = readTokenFile("token3.dat");
+    if(boost::filesystem::exists("token.dat")){
+        readTokenFile("token.dat");
+        std::cout << fileout.token1 << fileout.token2<< fileout.addr<<fileout.port+"\n";
+        //token3 = readTokenFile("token3.dat");
     } else {
         std::cerr << "CRITICAL: There is no valid way for Discord++ to obtain a token! Copy the example login.dat or token.dat to make one.\n";
         exit(1);
@@ -46,28 +50,22 @@ int main() {
 
     discordpp::Bot bot(
             aios,
-            token,
-            std::make_shared<discordpp::RestCurlPPModule>(aios, token),
-            std::make_shared<discordpp::WebsocketWebsocketPPModule>(aios, token)
+            fileout.token1,
+            std::make_shared<discordpp::RestCurlPPModule>(aios, fileout.token1),
+            std::make_shared<discordpp::WebsocketWebsocketPPModule>(aios, fileout.token1)
     );
 
     discordpp::Bot bot2(
             aios,
-            token2,
-            std::make_shared<discordpp::RestCurlPPModule>(aios, token2),
-            std::make_shared<discordpp::WebsocketWebsocketPPModule>(aios, token2)
+            fileout.token2,
+            std::make_shared<discordpp::RestCurlPPModule>(aios, fileout.token2),
+            std::make_shared<discordpp::WebsocketWebsocketPPModule>(aios, fileout.token2)
     );
 
-    discordpp::Bot bot3(
-            aios,
-            token3,
-            std::make_shared<discordpp::RestCurlPPModule>(aios, token3),
-            std::make_shared<discordpp::WebsocketWebsocketPPModule>(aios, token3)
-    );
 
-    tcp_server tcpbot(*aios, 13);
+    //tcp_server tcpbot(*aios, 13);
 
-    connection tcpclient(*aios, "5.199.135.151", "3663");
+    connection tcpclient(*aios, fileout.addr, fileout.port);
 
     //discordpp::sendpack out("localhost",13);
 /*
@@ -98,7 +96,7 @@ int main() {
                     {{"content", content}},
                     "POST"
             );
-            tcpclient.write(content);
+            //tcpclient.write(content);
             bot->send(3, {
                     {"game", {
                             {"name", "with " + msg["author"]["username"].get<std::string>()}
@@ -155,12 +153,99 @@ int main() {
                
         });
     });
+		tcpclient.add_read_handler([&tcpclient, &bot, &bot2/*, &bot3*/](const std::string& msg) {
+			std::istringstream iss(msg);
+			std::string command, user, msg2;
+			
+			iss >> command >> user >> msg2; 
+			int botno = 0;
+			if(command != "announce")
+				return;
 
-		tcpclient.add_read_handler([&tcpclient, &bot, &bot2, &bot3](const std::string& msg) {
+            json guild;
+            for(json& guildptr : bot.guilds_){
+                    if(guildptr["name"] == "testeserver"){
+                        guild = guildptr;
+                        break;
+                    }
+            }
+            bot.call(
+                    "/channels/"+guild["id"].get<std::string>()+"/webhooks",
+                    {}
+                    ,
+                    "GET",[command, user, msg2, &bot2](discordpp::Bot* bot, json msg1){
+                    json hook;
+                    for(json& webptr : msg1){
+                        if(webptr["name"] == "ABC"){
+                            hook = webptr;
+                            break;
+                        }
+                    }
+                    /*
+                        std::string content = msg["content"].get<std::string>()+"\n";
+                    
+
+                        std::string user = content.substr(0, content.find(" "));
+
+                        content = content.substr(content.find(" ")+1);
+                        std::string url = content.substr(0, content.find(" "));
+
+                        std::string msgg = content.substr(content.find(" ")+1); */
+
+
+                    int botno=0;
+            try
+            {
+              bot->call(
+                        "/webhooks/" + hook["id"].get<std::string>() + "/"+hook["token"].get<std::string>(),
+                        {{"content", msg2},{"username", user},{"avatar_url", "http://s8.picofile.com/file/8270044084/WOWRANKING_epsilonwow_ALL_GM_CATA_4_3_4.png"}},
+                        "POST"
+                );
+            }
+            catch(discordpp::ratelimit a)
+            {
+                botno++;
+            } 
+            try
+            {
+            	if(botno == 1){
+            	bot2.call(
+                        "/webhooks/" + hook["id"].get<std::string>() + "/"+hook["token"].get<std::string>(),
+                        {{"content", msg2},{"username", user},{"avatar_url", "http://s8.picofile.com/file/8270044084/WOWRANKING_epsilonwow_ALL_GM_CATA_4_3_4.png"}},
+                        "POST"
+                );
+            }
+
+            }/*
+            catch(discordpp::ratelimit a)
+            {
+                botno++;
+            } 
+            try
+            {
+                if(botno == 2)
+                {
+                	    bot3.call(
+                        "/channels/" + guild["id"].get<std::string>() + "/messages",
+                        {{"content", content}},
+                        "POST"
+                        );
+                                    
+                }
+            } */
+            catch(discordpp::ratelimit a)
+            {
+                std::cout << "ratelimit reached\n";
+            } 
+			}); 
+		});   
+
+		tcpclient.add_read_handler([&tcpclient, &bot, &bot2/*, &bot3*/](const std::string& msg) {
 			/*std::istringstream iss(msg);
 			std::string from, type, to, msg;
 			
 			iss >> from >> type >> to >> msg; */
+			return;
 			int botno = 0;
 			std::string content = msg+"\n";
             json guild;
@@ -194,7 +279,7 @@ int main() {
                         );
                                     
                 }
-            }
+            }/*
             catch(discordpp::ratelimit a)
             {
                 botno++;
@@ -210,7 +295,7 @@ int main() {
                         );
                                     
                 }
-            }
+            } */
             catch(discordpp::ratelimit a)
             {
                 std::cout << "ratelimit reached\n";
@@ -233,105 +318,18 @@ int main() {
             }
             if(guild["id"] != msg["channel_id"])
                         return;
+                  
+                  std::cout << msg["author"]["username"].get<std::string>()+"\n";
 
-            tcpclient.write(msg["content"].get<std::string>());
+            tcpclient.write("announce "+msg["author"]["username"].get<std::string>()+": "+msg["content"].get<std::string>());
 
 		});
 
 
     //out.send("hello"); 
 
+
     
-    tcpbot.addHandler("MESSAGE_CREATE", [&bot, &bot2](tcp_server* bot, std::string msg){
-            std::string content = msg+"\n";
-            json guild;
-            for(json& guildptr : bot.guilds_){
-                    if(guildptr["name"] == "testeserver"){
-                        guild = guildptr;
-                        break;
-                    }
-            }
-            bool rateLimit = false;
-            try
-            {
-                bot.call(
-                        "/channels/" + guild["id"].get<std::string>() + "/messages",
-                        {{"content", content}},
-                        "POST"
-                );
-                bot.send(3, {
-                        {"game", {
-                            {"name", "with himself"}
-                        }},
-                        {"status", "online"},
-                        {"afk", false},
-                        {"since", "null"}
-                }); 
-            }
-            catch(discordpp::ratelimit a)
-            {
-                rateLimit = true;
-            } 
-            try
-            {
-                if(rateLimit == true)
-                {
-                    bot2.call(
-                        "/channels/" + guild["id"].get<std::string>() + "/messages",
-                        {{"content", content}},
-                        "POST"
-                    );
-                    bot2.send(3, {
-                        {"game", {
-                            {"name", "with himself"}
-                        }},
-                        {"status", "online"},
-                        {"afk", false},
-                        {"since", "null"}
-                    });                 
-                }
-            }
-            catch(discordpp::ratelimit a)
-            {
-                std::cout << "ratelimit reached\n";
-            } 
-
-    });
-
-    tcpbot.addHandler("MESSAGE_CREATE1", [&bot, &bot2](tcp_server* bott, std::string msg){
-            std::string content = msg+"\n";
-            json guild;
-            for(json& guildptr : bot.guilds_){
-                    if(guildptr["name"] == "testeserver"){
-                        guild = guildptr;
-                        break;
-                    }
-            }
-            std::cout << guild["id"].get<std::string>() + "\n";
-            bot.call(
-                    "/channels/"+guild["id"].get<std::string>()+"/webhooks",
-                    {}
-                    ,
-                    "GET",[msg](discordpp::Bot* bot, json msg1){
-                    json hook;
-                    for(json& webptr : msg1){
-                        if(webptr["name"] == "ABC"){
-                            hook = webptr;
-                            break;
-                        }
-                    }
-                        std::string content = msg+"\n";
-
-                bot->call(
-                        "/webhooks/" + hook["id"].get<std::string>() + "/"+hook["token"].get<std::string>(),
-                        {{"content", content}},
-                        "POST"
-                );
-               
-        });
-            
-
-    });
 
     bot.addHandler("PRESENCE_UPDATE", [](discordpp::Bot*, json) {
         // ignore
@@ -352,14 +350,25 @@ int main() {
     return 0;
 }
 
-std::string readTokenFile(std::string tokenFilePath){
+void readTokenFile(std::string tokenFilePath){
     std::ifstream tokenFile;
     tokenFile.open(tokenFilePath);
 
     std::string token;
 
     if (tokenFile.is_open()) {
-        std::getline(tokenFile, token);
+        while(std::getline(tokenFile, token))
+        {
+        	if(token.find("Token1: ")!=std::string::npos)
+        		fileout.token1 = token.substr(strlen("Token1: "), std::string::npos);
+        	else if(token.find("Token2: ")!=std::string::npos)
+        		fileout.token2 = token.substr(strlen("Token2: "), std::string::npos);
+        	else if(token.find("Address: ")!=std::string::npos)
+        		fileout.addr = token.substr(strlen("Address: "), std::string::npos);
+        	else if(token.find("Port: ")!=std::string::npos)
+        		fileout.port = token.substr(strlen("Port: "), std::string::npos);
+
+        }
     } else {
         std::cerr << "CRITICAL: There is no such file as " + tokenFilePath + "! Copy the example login.dat to make one.\n";
         exit(1);
@@ -367,5 +376,4 @@ std::string readTokenFile(std::string tokenFilePath){
     tokenFile.close();
     std::cout << "Retrieved token.\n\n";
 
-    return token;
 }
