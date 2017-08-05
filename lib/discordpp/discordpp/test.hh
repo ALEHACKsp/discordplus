@@ -30,6 +30,13 @@ public:
         boost::asio::ip::tcp::resolver::query(m_addr, m_port),
         boost::bind(&connection::handle_resolve, this, _1, _2));  
     }
+
+    void reconnect()
+    {
+        m_resolver.async_resolve(
+        boost::asio::ip::tcp::resolver::query(m_addr, m_port),
+        boost::bind(&connection::handle_resolve, this, _1, _2));  
+    }
     
     void handle_resolve(const boost::system::error_code& err,
                          tcp::resolver::iterator endpoint_iterator)
@@ -48,6 +55,7 @@ void handle_connect(const boost::system::error_code& err,
                          tcp::resolver::iterator endpoint_iterator)
 {
     if (!err) {
+        connected = true;
         boost::asio::async_read_until(m_socket, m_buffer, "\r\n", 
         boost::bind(&connection::sign_in, this,boost::asio::placeholders::error, 
                 boost::asio::placeholders::bytes_transferred)); 
@@ -59,6 +67,7 @@ void handle_connect(const boost::system::error_code& err,
             boost::bind(&connection::handle_connect, this, _1, ++endpoint_iterator));
     } else {
         std::cerr << "Error2: " << err.message() << std::endl;
+        reconnect();
     }
 }  
 
@@ -81,7 +90,7 @@ void sign_in(const boost::system::error_code& err, std::size_t count)
             boost::asio::async_read_until(m_socket, m_buffer, "\r\n",
             boost::bind(&connection::read, this,boost::asio::placeholders::error, 
                 boost::asio::placeholders::bytes_transferred)); 
-            std::cout << "Signed in\n";
+            std::cout << "Signed in to TC\n";
         }
         else
         {
@@ -99,15 +108,19 @@ void sign_in(const boost::system::error_code& err, std::size_t count)
     void close()
     {
         m_socket.close();
-        std::cout << "Closed\n";
+        std::cout << "TC Connection Closed\n";
        // m_io_service.stop();
+        connected = false;
+        this->reconnect();
+        std::cout << "TC Reconnecting\n";
     }
 
 
 void write(const std::string& content)
 {
     //LOG("Write", content);
-    boost::asio::write(m_socket, boost::asio::buffer(content + "\r\n"));
+    if(connected)
+        boost::asio::write(m_socket, boost::asio::buffer(content + "\r\n"));
 }
 
 void read(const boost::system::error_code& error, std::size_t count)
@@ -183,6 +196,8 @@ private:
     std::string m_port;
     std::string m_accname;
     std::string m_password;
+
+    bool connected = false;
     
     boost::asio::ip::tcp::socket m_socket;
     boost::asio::ip::tcp::resolver m_resolver;

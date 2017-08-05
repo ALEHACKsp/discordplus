@@ -321,7 +321,6 @@ int main() {
             if(guild["id"] != msg["channel_id"])
                         return;
                   
-                  std::cout << msg["author"]["username"].get<std::string>()+"\n";
 
             tcpclient.write("announce "+msg["author"]["username"].get<std::string>()+": "+msg["content"].get<std::string>());
 
