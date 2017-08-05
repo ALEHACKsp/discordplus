@@ -120,6 +120,14 @@ void read(const boost::system::error_code& error, std::size_t count)
         std::string message;
         //std::getline(std::istream(&m_buffer), message);
               //  std::cout << message+"\n";
+        if(s.find("Authentication Required")== 0)
+        {
+            boost::asio::async_read_until(m_socket, m_buffer, "Username: ",
+            boost::bind(&connection::sign_in, this,boost::asio::placeholders::error, 
+                boost::asio::placeholders::bytes_transferred)); 
+        }
+        else
+        {
         m_read_handler(s);
         /*
         m_socket.async_read_some(m_buffer, 
@@ -131,6 +139,7 @@ void read(const boost::system::error_code& error, std::size_t count)
         boost::asio::async_read_until(m_socket, m_buffer, "\r\n",
         boost::bind(&connection::read, this,boost::asio::placeholders::error, 
                 boost::asio::placeholders::bytes_transferred)); 
+        }
         /*
         boost::asio::async_read(m_socket, boost::asio::buffer(m_buffer), boost::asio::transfer_at_least(1),
         boost::bind(&connection::read, this,

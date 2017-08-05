@@ -111,7 +111,7 @@ int main() {
     });
 
     bot.addHandler("MESSAGE_CREATE", [](discordpp::Bot* bot, json msg){
-            
+            return;
             json guild;
             for(json& guildptr : bot->guilds_){
                     if(guildptr["name"] == "osu!pt"){
