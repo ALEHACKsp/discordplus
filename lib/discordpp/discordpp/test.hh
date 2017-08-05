@@ -139,8 +139,14 @@ void read(const boost::system::error_code& error, std::size_t count)
             boost::bind(&connection::sign_in, this,boost::asio::placeholders::error, 
                 boost::asio::placeholders::bytes_transferred)); 
         }
-        else
+        else if(s.find("Authentication failed")== 0)
         {
+            std::cout << "TC Wrong password.. closing\n";
+            connected = false;
+            m_socket.close();
+            std::cout << "TC Connection Closed\n";
+        }
+        else{
         m_read_handler(s);
         /*
         m_socket.async_read_some(m_buffer, 
