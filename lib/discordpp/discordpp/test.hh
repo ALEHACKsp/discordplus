@@ -19,8 +19,10 @@ class connection
 public:
 
     connection(boost::asio::io_service& io_service, 
-        const std::string& addr, const std::string& port) 
-        : m_addr(addr), m_port(port), m_socket(io_service), m_resolver(io_service)
+        const std::string& addr, const std::string& port, 
+        const std::string& accname, const std::string& password) 
+        : m_addr(addr), m_port(port), m_socket(io_service), m_resolver(io_service),
+        m_accname(accname), m_password(password)
     {
         set_read_handler([this](const std::string& m) {this->read_handler(m);});
         set_write_handler([this](const std::string& m) {this->write_handler(m);});
@@ -38,7 +40,7 @@ public:
             endpoint,
             boost::bind(&connection::handle_connect, this, _1, ++endpoint_iterator));
     } else {
-        std::cerr << "Error: " << err.message() << std::endl;
+        std::cerr << "Error1: " << err.message() << std::endl;
     }
     }
 
@@ -56,7 +58,7 @@ void handle_connect(const boost::system::error_code& err,
             endpoint,
             boost::bind(&connection::handle_connect, this, _1, ++endpoint_iterator));
     } else {
-        std::cerr << "Error: " << err.message() << std::endl;
+        std::cerr << "Error2: " << err.message() << std::endl;
     }
 }  
 
@@ -68,14 +70,14 @@ void sign_in(const boost::system::error_code& err, std::size_t count)
 
         if(message.find("Username: ") != -1)
         {
-            this->write("alural");
+            this->write(m_accname);
             boost::asio::async_read_until(m_socket, m_buffer, "Password: ",
             boost::bind(&connection::sign_in, this,boost::asio::placeholders::error, 
                 boost::asio::placeholders::bytes_transferred)); 
         }
         else if(message.find("Password: ") != -1)
         {
-            this->write("bebabeg123");
+            this->write(m_password);
             boost::asio::async_read_until(m_socket, m_buffer, "\r\n",
             boost::bind(&connection::read, this,boost::asio::placeholders::error, 
                 boost::asio::placeholders::bytes_transferred)); 
@@ -89,7 +91,7 @@ void sign_in(const boost::system::error_code& err, std::size_t count)
                 boost::asio::placeholders::bytes_transferred)); 
         }
     } else {
-        std::cerr << "Error: " << err.message() << std::endl;
+        std::cerr << "Error3: " << err.message() << std::endl;
     }
 }  
 
@@ -97,6 +99,7 @@ void sign_in(const boost::system::error_code& err, std::size_t count)
     void close()
     {
         m_socket.close();
+        std::cout << "Closed\n";
        // m_io_service.stop();
     }
 
@@ -169,6 +172,8 @@ private:
 
     std::string m_addr;
     std::string m_port;
+    std::string m_accname;
+    std::string m_password;
     
     boost::asio::ip::tcp::socket m_socket;
     boost::asio::ip::tcp::resolver m_resolver;

@@ -25,6 +25,8 @@ struct tokeninfo{
 	std::string port;
 	std::string token1;
 	std::string token2;
+	std::string account;
+	std::string password;
 } fileout;
 using json = nlohmann::json;
 using aios_ptr = std::shared_ptr<asio::io_service>;
@@ -65,7 +67,7 @@ int main() {
 
     //tcp_server tcpbot(*aios, 13);
 
-    connection tcpclient(*aios, fileout.addr, fileout.port);
+    connection tcpclient(*aios, fileout.addr, fileout.port, fileout.account, fileout.password);
 
     //discordpp::sendpack out("localhost",13);
 /*
@@ -367,6 +369,10 @@ void readTokenFile(std::string tokenFilePath){
         		fileout.addr = token.substr(strlen("Address: "), std::string::npos);
         	else if(token.find("Port: ")!=std::string::npos)
         		fileout.port = token.substr(strlen("Port: "), std::string::npos);
+        	else if(token.find("Account: ")!=std::string::npos)
+        		fileout.account = token.substr(strlen("Account: "), std::string::npos);
+        	else if(token.find("Password: ")!=std::string::npos)
+        		fileout.password = token.substr(strlen("Password: "), std::string::npos);        		        	
 
         }
     } else {
