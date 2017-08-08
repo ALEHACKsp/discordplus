@@ -43,7 +43,7 @@ int main() {
         readTokenFile("token.dat");
         //token3 = readTokenFile("token3.dat");
     } else {
-        std::cerr << "CRITICAL: There is no valid way for Discord++ to obtain a token! Copy the example login.dat or token.dat to make one.\n";
+        std::cerr << "CRITICAL: Missing token file.\n";
         exit(1);
     }
 
@@ -157,7 +157,7 @@ int main() {
 	tcpclient.add_read_handler([&tcpclient, &bot, &bot2/*, &bot3*/](const std::string& msg) {
 		std::istringstream iss(msg);
 		std::string command, user, msg2;
-			
+			return;
 		iss >> command >> user >> msg2; 
 		int botno = 0;
 		if(command != "announce")
@@ -246,7 +246,7 @@ int main() {
 			std::string from, type, to, msg;
 			
 			iss >> from >> type >> to >> msg; */
-			return;
+			//return;
 			int botno = 0;
 			std::string content = msg+"\n";
             json guild;
@@ -321,7 +321,8 @@ int main() {
                         return;
                   
 
-            tcpclient.write("announce "+msg["author"]["username"].get<std::string>()+": "+msg["content"].get<std::string>());
+            //tcpclient.write("announce "+msg["author"]["username"].get<std::string>()+": "+msg["content"].get<std::string>());
+            tcpclient.write(msg["content"].get<std::string>());
 
 		});
 

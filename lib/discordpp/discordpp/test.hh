@@ -30,10 +30,12 @@ public:
         m_resolver.async_resolve(
         boost::asio::ip::tcp::resolver::query(m_addr, m_port),
         boost::bind(&connection::handle_resolve, this, _1, _2));  
+
     }
 
     void reconnect()
     {
+        m_socket.close();
         m_resolver.async_resolve(
         boost::asio::ip::tcp::resolver::query(m_addr, m_port),
         boost::bind(&connection::handle_resolve, this, _1, _2));  
@@ -47,6 +49,7 @@ public:
         m_socket.async_connect(
             endpoint,
             boost::bind(&connection::handle_connect, this, _1, ++endpoint_iterator));
+
     } else {
         std::cerr << "Error1: " << err.message() << std::endl;
     }
@@ -56,16 +59,20 @@ void handle_connect(const boost::system::error_code& err,
                          tcp::resolver::iterator endpoint_iterator)
 {
     if (!err) {
+
         connected = true;
         boost::asio::async_read_until(m_socket, m_buffer, "\r\n", 
         boost::bind(&connection::sign_in, this,boost::asio::placeholders::error, 
                 boost::asio::placeholders::bytes_transferred)); 
+        
     } else if (endpoint_iterator != tcp::resolver::iterator()) {
+
         m_socket.close();
         tcp::endpoint endpoint = *endpoint_iterator;
         m_socket.async_connect(
             endpoint,
             boost::bind(&connection::handle_connect, this, _1, ++endpoint_iterator));
+
     } else {
         std::cerr << "Error2: " << err.message() << std::endl;
         reconnect();
@@ -93,15 +100,23 @@ void sign_in(const boost::system::error_code& err, std::size_t count)
                 boost::asio::placeholders::bytes_transferred)); 
             std::cout << "Signed in to TC\n";
         }
-        else
+        else if(message.find("Authentication Required") == 0)
         {
 
             boost::asio::async_read_until(m_socket, m_buffer, "Username: ",
             boost::bind(&connection::sign_in, this,boost::asio::placeholders::error, 
                 boost::asio::placeholders::bytes_transferred)); 
         }
+        else
+        {
+            boost::asio::async_read_until(m_socket, m_buffer, "\r\n",
+            boost::bind(&connection::read, this,boost::asio::placeholders::error, 
+                boost::asio::placeholders::bytes_transferred)); 
+        }
+
     } else {
         std::cerr << "Error3: " << err.message() << std::endl;
+        reconnect();
     }
 }  
 
