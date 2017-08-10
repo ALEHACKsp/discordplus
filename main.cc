@@ -375,7 +375,7 @@ void readTokenFile(std::string tokenFilePath){
 
         }
     } else {
-        std::cerr << "CRITICAL: There is no such file as " + tokenFilePath + "! Copy the example login.dat to make one.\n";
+        std::cerr << "CRITICAL: There is no such file as " + tokenFilePath + "\n";
         exit(1);
     }
     tokenFile.close();
