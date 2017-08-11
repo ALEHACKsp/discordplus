@@ -109,55 +109,9 @@ int main() {
         }
     });
 
-    bot.addHandler("MESSAGE_CREATE", [](discordpp::Bot* bot, json msg){
-            return;
-            json guild;
-            for(json& guildptr : bot->guilds_){
-                    if(guildptr["name"] == "osu!pt"){
-                        guild = guildptr;
-                       
-                    }
-                    if(guildptr["id"] == msg["channel_id"])
-                        return;
-            }
-
-            std::cout << guild["id"].get<std::string>() + "\n";
-
-
-            bot->call(
-                    "/channels/"+guild["id"].get<std::string>()+"/webhooks",
-                    {}
-                    ,
-                    "GET",[msg](discordpp::Bot* bot, json msg1){
-                    json hook;
-                    for(json& webptr : msg1){
-                        if(webptr["name"] == "ABC"){
-                            hook = webptr;
-                            break;
-                        }
-                    }
-                        std::string content = msg["content"].get<std::string>()+"\n";
-                    
-
-                        std::string user = content.substr(0, content.find(" "));
-
-                        content = content.substr(content.find(" ")+1);
-                        std::string url = content.substr(0, content.find(" "));
-
-                        std::string msgg = content.substr(content.find(" ")+1);
-
-                bot->call(
-                        "/webhooks/" + hook["id"].get<std::string>() + "/"+hook["token"].get<std::string>(),
-                        {{"content", msgg},{"username", user},{"avatar_url", url}},
-                        "POST"
-                );
-               
-        });
-    });
 	tcpclient.add_read_handler([&tcpclient, &bot, &bot2/*, &bot3*/](const std::string& msg) {
 		std::istringstream iss(msg);
 		std::string command, user, msg2;
-			return;
 		iss >> command >> user >> msg2; 
 		int botno = 0;
 		if(command != "announce")
@@ -244,9 +198,10 @@ int main() {
 		tcpclient.add_read_handler([&tcpclient, &bot, &bot2/*, &bot3*/](const std::string& msg) {
 			/*std::istringstream iss(msg);
 			std::string from, type, to, msg;
-			
+			retu
 			iss >> from >> type >> to >> msg; */
-			//return;
+			return;
+
 			int botno = 0;
 			std::string content = msg+"\n";
             json guild;
@@ -321,8 +276,8 @@ int main() {
                         return;
                   
 
-            //tcpclient.write("announce "+msg["author"]["username"].get<std::string>()+": "+msg["content"].get<std::string>());
-            tcpclient.write(msg["content"].get<std::string>());
+            tcpclient.write("announce "+msg["author"]["username"].get<std::string>()+": "+msg["content"].get<std::string>());
+            //tcpclient.write(msg["content"].get<std::string>());
 
 		});
 
