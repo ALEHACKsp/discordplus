@@ -18,6 +18,11 @@ namespace asio = boost::asio;
 //#include <lib/nlohmannjson/src/json.hpp>
 //#include <nlohmann/json.hpp>
 
+#define BasicTextColor "|cff80dfff"
+#define VoterPretext "|cff00CCFF"
+#define StaffPretext "|cff00cc66"
+#define StaffMessage "|cff66ffb3" //tyler
+
 void readTokenFile(std::string tokenFilePath);
 
 struct tokeninfo{
@@ -37,6 +42,8 @@ int main() {
     /*/
      * Read token from token file.
     /*/
+
+
 
     std::string token, token2, token3;
     if(boost::filesystem::exists("token.dat")){
@@ -110,9 +117,28 @@ int main() {
     });
 
 	tcpclient.add_read_handler([&tcpclient, &bot, &bot2/*, &bot3*/](const std::string& msg) {
-		std::istringstream iss(msg);
-		std::string command, user, msg2;
-		iss >> command >> user >> msg2; 
+		//std::istringstream iss(msg);
+    	return;
+		std::string command, user, msg2, color, rank, colormsg;
+		//iss >> command >> user >> msg2; 
+		std::string content = msg;
+                    
+		std::cout  << "hi\n";
+                        command = content.substr(0, content.find(" "));
+
+                        content = content.substr(content.find("\30")+1);
+                        color = content.substr(0, content.find("\30"));
+                        content = content.substr(content.find("\30")+1);
+                        colormsg = content.substr(0, content.find("\30")); 
+                        content = content.substr(content.find("\30")+1);
+                        rank = content.substr(0, content.find("\30")); 
+                        content = content.substr(content.find("\30")+1);
+                        user = content.substr(0, content.find("\30")); 
+                        content = content.substr(content.find("\30")+1);
+                        msg2 = content.substr(0, content.find("\30")); 
+
+                
+
 		int botno = 0;
 		if(command != "announce")
 			return;
@@ -128,7 +154,7 @@ int main() {
                     "/channels/"+guild["id"].get<std::string>()+"/webhooks",
                     {}
                     ,
-                    "GET",[command, user, msg2, &bot2](discordpp::Bot* bot, json msg1){
+                    "GET",[command, user, msg2, color, rank, colormsg,  &bot2](discordpp::Bot* bot, json msg1){
                     json hook;
                     for(json& webptr : msg1){
                         if(webptr["name"] == "ABC"){
@@ -200,7 +226,7 @@ int main() {
 			std::string from, type, to, msg;
 			retu
 			iss >> from >> type >> to >> msg; */
-			return;
+			//return;
 
 			int botno = 0;
 			std::string content = msg+"\n";
@@ -274,9 +300,10 @@ int main() {
             }
             if(guild["id"] != msg["channel_id"])
                         return;
-                  
 
-            tcpclient.write("announce "+msg["author"]["username"].get<std::string>()+": "+msg["content"].get<std::string>());
+
+            //tcpclient.write("consoleann "+msg["author"]["username"].get<std::string>()+": "+msg["content"].get<std::string>());
+            tcpclient.write("consoleannounce |cff00cc66\30|cff66ffb3\30Staff\30"+msg["author"]["username"].get<std::string>()+"\30"+msg["content"].get<std::string>());
             //tcpclient.write(msg["content"].get<std::string>());
 
 		});
